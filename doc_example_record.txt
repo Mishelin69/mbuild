@@ -1,0 +1,12 @@
+{file name - full path}
+{file last modification since last index}
+{list of all file the header file is included in (example: {source}:{pos})
+the record also includes what position the file was last located in so we can verify
+though this is by default ignored and instead we only check the top of the file
+till the first function/class/struct all separated by ","}
+$ -  mark end 
+
+I know this might be a bit stupid but custom file formats
+are just better and Im planing on writing numbers as bytes
+thus complicating my life but at least I'll be able to speed
+up writing and reading/converting/whatever makes sense to me
