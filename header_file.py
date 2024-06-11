@@ -26,7 +26,7 @@ class HeaderFile:
 
         #yep this will not be utf-8 encoded for simplicity
         #I just like my bytes raw, yes I like it raw
-        if check != b"$":
+        if check[0] != b"$":
             print("Invalid file format!!")
 
         #conver everything to a correct format
@@ -37,9 +37,10 @@ class HeaderFile:
         comma_byte: int = 44
         l: int = 0
         r: int = 0
+        edges: List[Tuple[FileDescriptor, int]] = []
 
         #rework this 
-        #format {srcname}:st_mtime:line, {nextsrc}
+        #format {srcname}{NULL_BYTE_TERMINATION}st_mtime:line, {nextsrc}
         #       l -- ---r     r     r+4   r+8 = l
         while edges_bdat[r] != 0:
 
@@ -47,12 +48,19 @@ class HeaderFile:
 
                 #build str_name
                 _file_name: str = HeaderFile.read_next_str(edges_bdat[l:r])[0]
+                r += 1 #skip null termination byte
+                st_mtime: float = HeaderFile.read_next_float(edges_bdat[r:])[0]
+                r += 4 #skip 4 bytes for float
+                line: int = HeaderFile.read_next_int(edges_bdat[r:])[0]
+                r+=4   #skip another bytes int
+
+                edges.append((FileDescriptor(_file_name, st_mtime), line))
 
                 l = r
 
             r += 1
 
-        return cls(fd, [])
+        return cls(fd, edges)
 
     @staticmethod
     def read_next_str(byte_arr: bytes) -> Tuple[str, int]:
@@ -80,3 +88,6 @@ class HeaderFile:
         num: int = struct.unpack('f', byte_arr[:4])[0]
 
         return (num, 4)
+
+    def __str__(self) -> str:
+        return self.h_file.__str__() + '\n'.join(x.__str__() + '\n' for x in self.edges)

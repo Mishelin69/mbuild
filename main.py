@@ -35,8 +35,17 @@ def read_all_indexed_last() -> List[HeaderFile]:
         return []
 
     #read the file and init
+    headers: List[HeaderFile] = []
 
-    return []
+    with open(index_file_path_root + "index.mbuild", "rb") as f:
+
+        n_entries_bdat: bytes = f.readline()
+        n_entries: int = HeaderFile.read_next_int(n_entries_bdat)[0]
+
+        for _ in range(n_entries):
+            headers.append(HeaderFile.create_from_file_handle(f))
+
+    return headers
 
 def main() -> int:
 
@@ -55,7 +64,9 @@ def main() -> int:
     else:
        DESTINATION_DIRS.append(os.path.abspath("./test_dir/")) 
 
-    read_all_indexed_last()
+    reader_list: List[HeaderFile] = read_all_indexed_last()
+
+    print(reader_list[0])
 
     return 0
 

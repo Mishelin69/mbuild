@@ -13,3 +13,6 @@ class FileDescriptor:
     @classmethod
     def create_from_data(cls, file_name: FileName, st_mtime: UTC) -> FileDescriptor:
         return cls(file_name, st_mtime)
+
+    def __str__(self) -> str:
+        return self.file_name
