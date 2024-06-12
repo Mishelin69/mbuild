@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Tuple
 import sys
 import os
 
@@ -11,7 +11,7 @@ ALLOWED_SOURCE_EXTENSIONS: List[str] = [
 ]
 
 ALLOWED_HEADER_EXTENSIONS: List[str] = [
-    'c', 'cpp', 'cxx'
+    'h', 'hpp', 'hxx'
 ]
 
 type MBUILD_CONFIG_DICTIONARY = dict[str, Any]
@@ -21,9 +21,65 @@ MBUILD_CONFIG: MBUILD_CONFIG_DICTIONARY  = {
     "mb_dir_read_recursive": True
 }
 
-def check_last_and_update(last_indexed: List[FileDescriptor]) -> bool:
-    
-    return False
+class LStrIntPair:
+
+    def __init__(self, l: List[str], x: int) -> None:
+        self.l = l
+        self.x = x
+
+def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
+
+    headers_desc: List[HeaderFile] = []
+    file_good_extension: List[str] = []
+
+    #This should take all paths given and any subdirs and find 
+    #file with preset extension (ALLOWED_HEADER_EXTIONS) 
+    #will be modifiable in the future
+    #TL;DR: filter header files from given directories and their subdirs (if set to true)
+    #this is just a weird implementation of a "stack" I guess now thinking about it
+    for p in paths:
+
+        if not os.path.isdir(p):
+            print(f'PATH NOT A DIRECTORY!!\n{p}')
+
+        p_stack: List[LStrIntPair] = []
+        p_stack.append(LStrIntPair(os.listdir(p), 0))
+        p_index: int = 0
+        s_index: int = 0
+
+        while len(p_stack) >= 1:
+
+            #if we reach end of path branch move back up (pop)
+            if s_index == len(p_stack[p_index].l):
+                p_index -= 1
+                s_index = p_stack[p_index].x
+                p_stack.pop()
+
+            p_layer: LStrIntPair = p_stack[p_index]
+            _path: str = p_layer.l[s_index]
+
+            #index into paths (push)
+            if recursive and os.path.isdir(_path):
+                p_stack.append(LStrIntPair(os.listdir(_path), 0))
+                p_layer.x += 1
+                s_index = 0
+                p_index += 1
+
+                continue
+
+            else:
+                if _path.endswith(ALLOWED_HEADER_EXTENSIONS):
+                    file_good_extension.append(_path)
+
+            s_index += 1
+            p_layer.x = s_index
+
+    #build current header file fds and
+    #search for edges with their positions/read from previous and search from that
+    #method/condition for search in config !!!
+
+    return headers_desc
+
 
 def read_all_indexed_last() -> List[HeaderFile]:
 
