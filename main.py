@@ -1,10 +1,11 @@
-from typing import Any, List, Tuple
+from typing import Any, List, IO
 import sys
 import os
 
 from header_file import HeaderFile
 from source_file import SourceFile
 from file_descriptor import FileDescriptor
+from enum import Enum
 
 ALLOWED_SOURCE_EXTENSIONS: List[str] = [
     'c', 'cpp', 'cxx'
@@ -16,9 +17,13 @@ ALLOWED_HEADER_EXTENSIONS: List[str] = [
 
 type MBUILD_CONFIG_DICTIONARY = dict[str, Any]
 
+SourceScan = Enum('SourceScan', ['function_def', 'n_lines'])
+
 MBUILD_CONFIG: MBUILD_CONFIG_DICTIONARY  = {
     "mb_header_fastecheck": True,
-    "mb_dir_read_recursive": True
+    "mb_dir_read_recursive": True,
+    "mb_dir_source_scan" : SourceScan.function_def,
+    "n_lines": 0,
 }
 
 class LStrIntPair:
@@ -27,10 +32,28 @@ class LStrIntPair:
         self.l = l
         self.x = x
 
+def source_scan_read_n(handle: IO, lines: int) -> List[FileDescriptor]:
+
+    for x in range(lines):
+        
+        line: str = handle.readline()
+        pos: int = line.find("#define")
+
+        if pos != -1:
+            pass
+            
+    
+    return []
+
+def source_scan_till_fd(handle: IO, lines: int) -> List[FileDescriptor]:
+    
+    return []
+ 
 def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
 
     headers_desc: List[HeaderFile] = []
     file_good_extension: List[str] = []
+    file_good_source: List[str] = []
 
     #This should take all paths given and any subdirs and find 
     #file with preset extension (ALLOWED_HEADER_EXTIONS) 
@@ -70,13 +93,31 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
             else:
                 if _path.endswith(ALLOWED_HEADER_EXTENSIONS):
                     file_good_extension.append(_path)
+                elif _path.endswith(ALLOWED_SOURCE_EXTENSIONS):
+                    file_good_source.append(_path)
 
             s_index += 1
             p_layer.x = s_index
 
+    print(file_good_extension)
+
     #build current header file fds and
     #search for edges with their positions/read from previous and search from that
     #method/condition for search in config !!!
+
+    edges: List[FileDescriptor] = []
+
+    for x in file_good_source:
+
+        with open(x, "r") as f:
+
+            match (MBUILD_CONFIG["mb_dir_source_scan"]):
+
+                case SourceScan.function_def:
+                    edges = 
+                case SourceScan.n_lines:
+                    edges = 
+
 
     return headers_desc
 
