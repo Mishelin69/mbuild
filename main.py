@@ -32,23 +32,88 @@ class LStrIntPair:
         self.l = l
         self.x = x
 
+def source_parse_after_def(s: str, i: int) -> str:
+
+    while s[i] != '<':
+        i += 1
+
+    i += 1
+
+    ret: str = ''
+
+    while s[i] != '>':
+        ret += s[i]
+        i += 1
+    
+    return ret
+
+def build_fd_from_list(f_names: List[str]) -> List[FileDescriptor]:
+
+    #yes ik this is mostrosity
+    return [FileDescriptor(x, os.stat(x).st_mtime) for x in f_names]
+
 def source_scan_read_n(handle: IO, lines: int) -> List[FileDescriptor]:
 
-    for x in range(lines):
+    f_names: List[str] = []
+
+    for _ in range(lines):
         
         line: str = handle.readline()
         pos: int = line.find("#define")
 
         if pos != -1:
-            pass
             
-    
-    return []
+            h_name: str = source_parse_after_def(line, pos)
+            if h_name.endswith(tuple(ALLOWED_HEADER_EXTENSIONS)):
+                f_names.append(h_name)
+            
+    return build_fd_from_list(f_names)
 
-def source_scan_till_fd(handle: IO, lines: int) -> List[FileDescriptor]:
-    
-    return []
- 
+#scan till function definition (not just function declaration)
+def source_scan_till_fd(handle: IO) -> List[FileDescriptor]:
+
+    f_names: List[str] = []
+
+    while True:
+
+        line: str = handle.readline()
+        pos: int = line.find("#define")
+
+        if pos != -1:
+            
+            h_name: str = source_parse_after_def(line, pos)
+            if h_name.endswith(tuple(ALLOWED_HEADER_EXTENSIONS)):
+                f_names.append(h_name)
+
+        pos = line.find(')')        
+
+        #check condition
+        if pos != -1:
+
+            condition: bool = False
+
+            l_curly: int = 123 
+
+            #check if next is curly or not
+            while True:
+
+                pos += 1
+
+                if line[pos].isspace():
+                    pos += 1
+                    continue
+                elif ord(line[pos]) == l_curly:
+                    condition = True
+                    break
+                else:
+                    break
+
+            if condition:
+                break
+
+    return build_fd_from_list(f_names)
+
+
 def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
 
     headers_desc: List[HeaderFile] = []
@@ -105,7 +170,7 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
     #search for edges with their positions/read from previous and search from that
     #method/condition for search in config !!!
 
-    edges: List[FileDescriptor] = []
+    edges: List[List[FileDescriptor]] = []
 
     for x in file_good_source:
 
@@ -114,10 +179,9 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
             match (MBUILD_CONFIG["mb_dir_source_scan"]):
 
                 case SourceScan.function_def:
-                    edges = 
+                    edges.append(source_scan_till_fd(f))
                 case SourceScan.n_lines:
-                    edges = 
-
+                    edges.append(source_scan_read_n(f, MBUILD_CONFIG["n_lines"]))
 
     return headers_desc
 
