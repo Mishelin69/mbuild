@@ -1,4 +1,4 @@
-from typing import Any, List, IO
+from typing import Any, List, IO, Tuple
 import sys
 import os
 
@@ -32,20 +32,20 @@ class LStrIntPair:
         self.l = l
         self.x = x
 
+#new version should actually speed things up for bigger inputs
+#we avoid reallocating each time by just allocating once!
 def source_parse_after_def(s: str, i: int) -> str:
 
     while s[i] != '<':
         i += 1
 
     i += 1
-
-    ret: str = ''
+    l: int = i
 
     while s[i] != '>':
-        ret += s[i]
         i += 1
     
-    return ret
+    return s[l:i]
 
 def build_fd_from_list(f_names: List[str]) -> List[FileDescriptor]:
 
@@ -57,7 +57,7 @@ def source_scan_read_n(handle: IO, lines: int) -> List[FileDescriptor]:
     f_names: List[str] = []
 
     for _ in range(lines):
-        
+
         line: str = handle.readline()
         pos: int = line.find("#define")
 
@@ -77,7 +77,9 @@ def source_scan_till_fd(handle: IO) -> List[FileDescriptor]:
     while True:
 
         line: str = handle.readline()
-        pos: int = line.find("#define")
+        #WHY WAS THERE #define in the first place? Like what the heck???!
+        #thank god I found it before it ended a bit too bad T_T
+        pos: int = line.find("#include")
 
         if pos != -1:
             
@@ -124,7 +126,7 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
     #file with preset extension (ALLOWED_HEADER_EXTIONS) 
     #will be modifiable in the future
     #TL;DR: filter header files from given directories and their subdirs (if set to true)
-    #this is just a weird implementation of a "stack" I guess now thinking about it
+    #this is just a weird implementation of a "stack" I guess, now thinking about it
     for p in paths:
 
         if not os.path.isdir(p):
@@ -170,6 +172,7 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
     #search for edges with their positions/read from previous and search from that
     #method/condition for search in config !!!
 
+    #damn we getting really rusty with this type abomination
     edges: List[List[FileDescriptor]] = []
 
     for x in file_good_source:
@@ -182,6 +185,14 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
                     edges.append(source_scan_till_fd(f))
                 case SourceScan.n_lines:
                     edges.append(source_scan_read_n(f, MBUILD_CONFIG["n_lines"]))
+
+    #safe check
+    if len(file_good_source) != len(edges):
+        print("Error: Something went wrong with scanning source files!\n\
+                HINT: len(source) != len(edges)")
+
+    for source, header in zip(file_good_source, edges):
+        pass
 
     return headers_desc
 

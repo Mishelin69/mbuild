@@ -8,12 +8,12 @@ type NFileHandle = io.BufferedReader
 
 class HeaderFile:
 
-    def __init__(self, h_file: FileDescriptor, edges: List[Tuple[FileDescriptor, int]]):
+    def __init__(self, h_file: FileDescriptor, edges: List[FileDescriptor]):
         self.h_file: FileDescriptor = h_file
 
         #edges consist of [source descriptor, position in file]
         #if source changes and if its enabled by config 
-        self.edges: List[Tuple[FileDescriptor, int]] = edges
+        self.edges: List[FileDescriptor] = edges
 
     @classmethod
     def create_from_file_handle(cls, handle: NFileHandle) -> HeaderFile:
@@ -37,7 +37,7 @@ class HeaderFile:
         comma_byte: int = 44
         l: int = 0
         r: int = 0
-        edges: List[Tuple[FileDescriptor, int]] = []
+        edges: List[FileDescriptor] = []
 
         #rework this 
         #format {srcname}{NULL_BYTE_TERMINATION}st_mtime:line, {nextsrc}
@@ -51,10 +51,8 @@ class HeaderFile:
                 r += 1 #skip null termination byte
                 st_mtime: float = HeaderFile.read_next_float(edges_bdat[r:])[0]
                 r += 4 #skip 4 bytes for float
-                line: int = HeaderFile.read_next_int(edges_bdat[r:])[0]
-                r+=4   #skip another bytes int
 
-                edges.append((FileDescriptor(_file_name, st_mtime), line))
+                edges.append(FileDescriptor(_file_name, st_mtime))
 
                 l = r
 
