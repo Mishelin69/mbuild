@@ -159,9 +159,9 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
 
             else:
                 if _path.endswith(ALLOWED_HEADER_EXTENSIONS):
-                    file_good_extension.append(_path)
+                    file_good_extension.append(os.path.abspath(_path))
                 elif _path.endswith(ALLOWED_SOURCE_EXTENSIONS):
-                    file_good_source.append(_path)
+                    file_good_source.append(os.path.abspath(_path))
 
             s_index += 1
             p_layer.x = s_index
@@ -191,11 +191,20 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
         print("Error: Something went wrong with scanning source files!\n\
                 HINT: len(source) != len(edges)")
 
+    d_header_desc: dict[str, List[FileDescriptor]] = {}
+
+    #kind hard to think of a good way to "reverse" this data effeciently
     for source, header in zip(file_good_source, edges):
-        pass
+        for h in header:
 
+            if h.file_name not in d_header_desc:
+                d_header_desc[h.file_name] = []
+
+            d_header_desc[h.file_name].append(FileDescriptor.create_from_name(source))
+
+    #now finish yaaay
+            
     return headers_desc
-
 
 def read_all_indexed_last() -> List[HeaderFile]:
 
