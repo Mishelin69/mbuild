@@ -20,7 +20,7 @@ class HeaderFile:
 
         #read data according to the example and correctly process it
         file_name_bdat: bytes = handle.readline()
-        st_mtime_bdat: bytes = handle.read(4)
+        st_ctime_bdat: bytes = handle.read(4)
         edges_bdat: bytes = handle.readline()
         check: bytes = handle.readline()
 
@@ -31,8 +31,8 @@ class HeaderFile:
 
         #conver everything to a correct format
         file_name: str = HeaderFile.read_next_str(file_name_bdat)[0]
-        st_mtime: float = HeaderFile.read_next_float(st_mtime_bdat)[0]
-        fd: FileDescriptor = FileDescriptor.create_from_data(file_name, st_mtime)
+        st_ctime: float = HeaderFile.read_next_float(st_ctime_bdat)[0]
+        fd: FileDescriptor = FileDescriptor.create_from_data(file_name, st_ctime)
 
         comma_byte: int = 44
         l: int = 0
@@ -40,7 +40,7 @@ class HeaderFile:
         edges: List[FileDescriptor] = []
 
         #rework this 
-        #format {srcname}{NULL_BYTE_TERMINATION}st_mtime:line, {nextsrc}
+        #format {srcname}{NULL_BYTE_TERMINATION}st_ctime:line, {nextsrc}
         #       l -- ---r     r     r+4   r+8 = l
         while edges_bdat[r] != 0:
 
@@ -49,10 +49,10 @@ class HeaderFile:
                 #build str_name
                 _file_name: str = HeaderFile.read_next_str(edges_bdat[l:r])[0]
                 r += 1 #skip null termination byte
-                st_mtime: float = HeaderFile.read_next_float(edges_bdat[r:])[0]
+                st_ctime: float = HeaderFile.read_next_float(edges_bdat[r:])[0]
                 r += 4 #skip 4 bytes for float
 
-                edges.append(FileDescriptor(_file_name, st_mtime))
+                edges.append(FileDescriptor(_file_name, st_ctime))
 
                 l = r
 
@@ -63,7 +63,6 @@ class HeaderFile:
     @staticmethod
     def read_next_str(byte_arr: bytes) -> Tuple[str, int]:
 
-        s: str = ""
         r: int = 0
 
         while byte_arr[r] != 0:

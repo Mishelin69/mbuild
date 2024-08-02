@@ -3,7 +3,6 @@ import sys
 import os
 
 from header_file import HeaderFile
-from source_file import SourceFile
 from file_descriptor import FileDescriptor
 from enum import Enum
 
@@ -50,7 +49,7 @@ def source_parse_after_def(s: str, i: int) -> str:
 def build_fd_from_list(f_names: List[str]) -> List[FileDescriptor]:
 
     #yes ik this is mostrosity
-    return [FileDescriptor(x, os.stat(x).st_mtime) for x in f_names]
+    return [FileDescriptor(x, os.stat(x).st_ctime) for x in f_names]
 
 def source_scan_read_n(handle: IO, lines: int) -> List[FileDescriptor]:
 
@@ -191,18 +190,20 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
         print("Error: Something went wrong with scanning source files!\n\
                 HINT: len(source) != len(edges)")
 
-    d_header_desc: dict[str, List[FileDescriptor]] = {}
+    #[edges] => header files
+    #[source] => source files, source[0] ^ edges[o] => source file and header files pair
+    #transform into header[0] = source files the header is in
+    header_to_source: dict[FileDescriptor, List[FileDescriptor]] = {}
 
-    #kind hard to think of a good way to "reverse" this data effeciently
-    for source, header in zip(file_good_source, edges):
-        for h in header:
+    for source, edge in zip(file_good_source, edges):
+        for header in edge:
 
-            if h.file_name not in d_header_desc:
-                d_header_desc[h.file_name] = []
+            if header not in header_to_source:
+                header_to_source[header] = []
 
-            d_header_desc[h.file_name].append(FileDescriptor.create_from_name(source))
-
-    #now finish yaaay
+            #figure out how to check if source is already in there :) 
+            #thinking about using sets and calling it a day
+            header_to_source[header].append(FileDescriptor.create_from_name(source))
             
     return headers_desc
 
