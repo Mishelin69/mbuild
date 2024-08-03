@@ -191,19 +191,35 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
                 HINT: len(source) != len(edges)")
 
     #[edges] => header files
-    #[source] => source files, source[0] ^ edges[o] => source file and header files pair
+    #[source] => source files, source[0] ^ edges[o] => 
+    #source file and header files pair
     #transform into header[0] = source files the header is in
-    header_to_source: dict[FileDescriptor, List[FileDescriptor]] = {}
+
+    #thinking about it, this can kind of lead to problems I guess
+    #yes it lead to issues and it sucks 
+    #they're diff instances so they hash differently
+    #(solution is to use strings as keys)
+    header_to_source: dict[str, Tuple[FileDescriptor, List[FileDescriptor]]] = {}
+    header_check_copy: dict[str, List[str]] = {}
 
     for source, edge in zip(file_good_source, edges):
         for header in edge:
 
-            if header not in header_to_source:
-                header_to_source[header] = []
+            if header.file_name not in header_check_copy:
+                header_check_copy[header.file_name] = []
+
+            if source in header_check_copy[header.file_name]:
+                continue
+            else:
+                header_check_copy[header.file_name].append(source)
+
+            if header.file_name not in header_to_source:
+                header_to_source[header.file_name] = (header, [])
 
             #figure out how to check if source is already in there :) 
             #thinking about using sets and calling it a day
-            header_to_source[header].append(FileDescriptor.create_from_name(source))
+            #1 => List[FileDescriptor]
+            header_to_source[header.file_name][1].append(FileDescriptor.create_from_name(source))
             
     return headers_desc
 
