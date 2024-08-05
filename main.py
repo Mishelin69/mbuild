@@ -268,6 +268,9 @@ def main() -> int:
 
     reader_list: List[HeaderFile] = read_all_indexed_last()
 
+    #test place yk
+    read_current: List[HeaderFile] = read_all_current(DESTINATION_DIRS, True)
+
     print(reader_list[0])
 
     return 0
