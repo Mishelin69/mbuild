@@ -220,6 +220,10 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
             #thinking about using sets and calling it a day
             #1 => List[FileDescriptor]
             header_to_source[header.file_name][1].append(FileDescriptor.create_from_name(source))
+
+    #testing will happen when Ill feel like it D: (tomorrow)
+    for x in header_to_source.values():
+        headers_desc.append(HeaderFile(x[0], x[1]))
             
     return headers_desc
 
