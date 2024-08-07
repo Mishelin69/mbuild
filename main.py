@@ -1,4 +1,4 @@
-from typing import Any, Generator, List, IO, Tuple
+from typing import Any, Generator, List, IO, Set, Tuple
 import sys
 import os
 
@@ -138,7 +138,7 @@ def listdir_abspath(dir: str) -> Generator[str, None, None]:
 def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
 
     headers_desc: List[HeaderFile] = []
-    file_good_extension: List[str] = []
+    file_good_extension: Set[str] = set() 
     file_good_source: List[str] = []
 
     #This should take all paths given and any subdirs and find 
@@ -181,9 +181,10 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
                 continue
 
             else:
-                if _path.endswith(tuple(ALLOWED_HEADER_EXTENSIONS)):
-                    file_good_extension.append(os.path.abspath(_path))
-                elif _path.endswith(tuple(ALLOWED_SOURCE_EXTENSIONS)):
+                #commented out for now :)
+                #if _path.endswith(tuple(ALLOWED_HEADER_EXTENSIONS)):
+                    #file_good_extension.add(os.path.abspath(_path))
+                if _path.endswith(tuple(ALLOWED_SOURCE_EXTENSIONS)):
                     file_good_source.append(os.path.abspath(_path))
 
             s_index += 1
@@ -248,6 +249,7 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
 
     #testing will happen when Ill feel like it D: (tomorrow)
     for x in header_to_source.values():
+
         headers_desc.append(HeaderFile(x[0], x[1]))
             
     return headers_desc
