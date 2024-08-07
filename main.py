@@ -1,4 +1,4 @@
-from typing import Any, List, IO, Tuple
+from typing import Any, Generator, List, IO, Tuple
 import sys
 import os
 
@@ -49,7 +49,7 @@ def source_parse_after_def(s: str, i: int) -> str:
 def build_fd_from_list(f_names: List[str]) -> List[FileDescriptor]:
 
     #yes ik this is mostrosity
-    return [FileDescriptor(x, os.stat(x).st_ctime) for x in f_names]
+    return [FileDescriptor(x, os.stat(x).st_birthtime) for x in f_names]
 
 def source_scan_read_n(handle: IO, lines: int) -> List[FileDescriptor]:
 
@@ -76,6 +76,12 @@ def source_scan_till_fd(handle: IO) -> List[FileDescriptor]:
     while True:
 
         line: str = handle.readline()
+
+        #forgot this pretty important check yk
+        if not line:
+            print("WARNING: EMPTY FILE!")
+            break
+
         #WHY WAS THERE #define in the first place? Like what the heck???!
         #thank god I found it before it ended a bit too bad T_T
         pos: int = line.find("#include")
@@ -114,6 +120,20 @@ def source_scan_till_fd(handle: IO) -> List[FileDescriptor]:
 
     return build_fd_from_list(f_names)
 
+def listdir_abspath(dir: str) -> Generator[str, None, None]:
+
+    if not os.path.isdir(dir):
+        print(f"PATH IS NOT A DIR!!!!\n{dir}")
+        exit(-1)
+
+    for dirpath, dirnames, filenames in os.walk(dir):
+
+        for d in dirnames:
+            yield os.path.abspath(os.path.join(dirpath, d))
+
+        for f in filenames:
+            yield os.path.abspath(os.path.join(dirpath, f))
+
 
 def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
 
@@ -132,7 +152,7 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
             print(f'PATH NOT A DIRECTORY!!\n{p}')
 
         p_stack: List[LStrIntPair] = []
-        p_stack.append(LStrIntPair(os.listdir(p), 0))
+        p_stack.append(LStrIntPair(list(listdir_abspath(p)), 0))
         p_index: int = 0
         s_index: int = 0
 
@@ -141,6 +161,10 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
             #if we reach end of path branch move back up (pop)
             if s_index == len(p_stack[p_index].l):
                 p_index -= 1
+
+                if p_index < 0:
+                    break
+
                 s_index = p_stack[p_index].x
                 p_stack.pop()
 
@@ -149,7 +173,7 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
 
             #index into paths (push)
             if recursive and os.path.isdir(_path):
-                p_stack.append(LStrIntPair(os.listdir(_path), 0))
+                p_stack.append(LStrIntPair(list(listdir_abspath(_path)), 0))
                 p_layer.x += 1
                 s_index = 0
                 p_index += 1
@@ -157,15 +181,16 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
                 continue
 
             else:
-                if _path.endswith(ALLOWED_HEADER_EXTENSIONS):
+                if _path.endswith(tuple(ALLOWED_HEADER_EXTENSIONS)):
                     file_good_extension.append(os.path.abspath(_path))
-                elif _path.endswith(ALLOWED_SOURCE_EXTENSIONS):
+                elif _path.endswith(tuple(ALLOWED_SOURCE_EXTENSIONS)):
                     file_good_source.append(os.path.abspath(_path))
 
             s_index += 1
             p_layer.x = s_index
 
     print(file_good_extension)
+    print(file_good_source)
 
     #build current header file fds and
     #search for edges with their positions/read from previous and search from that
@@ -271,7 +296,8 @@ def main() -> int:
     #test place yk
     read_current: List[HeaderFile] = read_all_current(DESTINATION_DIRS, True)
 
-    print(reader_list[0])
+    #print(reader_list[0])
+    print(read_current)
 
     return 0
 
