@@ -141,55 +141,8 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
     file_good_extension: Set[str] = set() 
     file_good_source: List[str] = []
 
-    #This should take all paths given and any subdirs and find 
-    #file with preset extension (ALLOWED_HEADER_EXTIONS) 
-    #will be modifiable in the future
-    #TL;DR: filter header files from given directories and their subdirs (if set to true)
-    #this is just a weird implementation of a "stack" I guess, now thinking about it
-    for p in paths:
-
-        if not os.path.isdir(p):
-            print(f'PATH NOT A DIRECTORY!!\n{p}')
-
-        p_stack: List[LStrIntPair] = []
-        p_stack.append(LStrIntPair(list(listdir_abspath(p)), 0))
-        p_index: int = 0
-        s_index: int = 0
-
-        while len(p_stack) >= 1:
-
-            #if we reach end of path branch move back up (pop)
-            if s_index == len(p_stack[p_index].l):
-                p_index -= 1
-
-                if p_index < 0:
-                    break
-
-                s_index = p_stack[p_index].x
-                p_stack.pop()
-
-            p_layer: LStrIntPair = p_stack[p_index]
-            _path: str = p_layer.l[s_index]
-
-            #index into paths (push)
-            if recursive and os.path.isdir(_path):
-                p_stack.append(LStrIntPair(list(listdir_abspath(_path)), 0))
-                p_layer.x += 1
-                s_index = 0
-                p_index += 1
-
-                continue
-
-            else:
-                #commented out for now :)
-                #if _path.endswith(tuple(ALLOWED_HEADER_EXTENSIONS)):
-                    #file_good_extension.add(os.path.abspath(_path))
-                if _path.endswith(tuple(ALLOWED_SOURCE_EXTENSIONS)):
-                    file_good_source.append(os.path.abspath(_path))
-
-            s_index += 1
-            p_layer.x = s_index
-
+    file_good_extension, file_good_source = read_all_dirs(paths, recursive)
+    
     print(file_good_extension)
     print(file_good_source)
 
@@ -254,6 +207,63 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
             
     return headers_desc
 
+def read_all_dirs(paths: List[str], recursive: bool) -> Tuple[Set[str], List[str]]:
+
+    file_good_extension: Set[str] = set() 
+    file_good_source: List[str] = []
+
+    #This should take all paths given and any subdirs and find 
+    #file with preset extension (ALLOWED_HEADER_EXTIONS) 
+    #will be modifiable in the future
+    #TL;DR: filter header files from given directories and their subdirs (if set to true)
+    #this is just a weird implementation of a "stack" I guess, now thinking about it
+    for p in paths:
+
+        if not os.path.isdir(p):
+            print(f'PATH NOT A DIRECTORY!!\n{p}')
+
+        p_stack: List[LStrIntPair] = []
+        p_stack.append(LStrIntPair(list(listdir_abspath(p)), 0))
+        p_index: int = 0
+        s_index: int = 0
+
+        while len(p_stack) >= 1:
+
+            #if we reach end of path branch move back up (pop)
+            if s_index == len(p_stack[p_index].l):
+                p_index -= 1
+
+                if p_index < 0:
+                    break
+
+                s_index = p_stack[p_index].x
+                p_stack.pop()
+
+            p_layer: LStrIntPair = p_stack[p_index]
+            _path: str = p_layer.l[s_index]
+
+            #index into paths (push)
+            if recursive and os.path.isdir(_path):
+                p_stack.append(LStrIntPair(list(listdir_abspath(_path)), 0))
+                p_layer.x += 1
+                s_index = 0
+                p_index += 1
+
+                continue
+
+            else:
+                #commented out for now :)
+                #if _path.endswith(tuple(ALLOWED_HEADER_EXTENSIONS)):
+                    #file_good_extension.add(os.path.abspath(_path))
+                if _path.endswith(tuple(ALLOWED_SOURCE_EXTENSIONS)):
+                    file_good_source.append(os.path.abspath(_path))
+
+            s_index += 1
+            p_layer.x = s_index
+
+
+    return (file_good_extension, file_good_source)
+
 def read_all_indexed_last() -> List[HeaderFile]:
 
     index_file_path_root: str = os.path.abspath("./")
@@ -276,6 +286,15 @@ def read_all_indexed_last() -> List[HeaderFile]:
 
     return headers
 
+def read_shallow_md(dirs: List[str]) -> List[FileDescriptor]:
+
+    _, file_good_source = read_all_dirs(dirs, True)
+    
+    return []
+
+def compare_file_md(reader_list: List[HeaderFile], shallow_md: List[FileDescriptor]):
+    pass
+
 def main() -> int:
 
     DESTINATION_DIRS: List[str] = []
@@ -295,11 +314,30 @@ def main() -> int:
 
     reader_list: List[HeaderFile] = read_all_indexed_last()
 
-    #test place yk
-    read_current: List[HeaderFile] = read_all_current(DESTINATION_DIRS, True)
+    if len(reader_list) == 0:
 
-    #print(reader_list[0])
-    print(read_current)
+        #test place yk
+        read_current: List[HeaderFile] = read_all_current(DESTINATION_DIRS, True)
+
+        #print(reader_list[0])
+        print(read_current)
+
+        #perform write, compile etc 
+
+    else:
+        #otherwise we don't read the whole thing and just do a shallow read (i.e. not read everything)
+        #this alsoo needs a rewrite so the "interface" is a bit nicer
+        #the design is sort of fine for now makes sense but it's a bit confusing
+        #I need to clean up and maybe split to a different class
+        #at this point its a big ass main file with no organization whatsoever
+
+        shallow_md: List[FileDescriptor] = read_shallow_md(DESTINATION_DIRS)
+
+        #this will in-place shrink the array
+        compare_file_md(reader_list, shallow_md)
+
+        pass
+        #I wish I could use the unimplemented macro
 
     return 0
 
