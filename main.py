@@ -135,16 +135,11 @@ def listdir_abspath(dir: str) -> Generator[str, None, None]:
             yield os.path.abspath(os.path.join(dirpath, f))
 
 
-def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
+def build_header_to_source_relation(source_files: List[str]) -> List[HeaderFile]:
 
     headers_desc: List[HeaderFile] = []
-    file_good_extension: Set[str] = set() 
-    file_good_source: List[str] = []
 
-    file_good_extension, file_good_source = read_all_dirs(paths, recursive)
-    
-    print(file_good_extension)
-    print(file_good_source)
+    print(source_files)
 
     #build current header file fds and
     #search for edges with their positions/read from previous and search from that
@@ -153,7 +148,7 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
     #damn we getting really rusty with this type abomination
     edges: List[List[FileDescriptor]] = []
 
-    for x in file_good_source:
+    for x in source_files:
 
         with open(x, "r") as f:
 
@@ -165,7 +160,7 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
                     edges.append(source_scan_read_n(f, MBUILD_CONFIG["n_lines"]))
 
     #safe check
-    if len(file_good_source) != len(edges):
+    if len(source_files) != len(edges):
         print("Error: Something went wrong with scanning source files!\n\
                 HINT: len(source) != len(edges)")
 
@@ -181,7 +176,7 @@ def read_all_current(paths: List[str], recursive: bool) -> List[HeaderFile]:
     header_to_source: dict[str, Tuple[FileDescriptor, List[FileDescriptor]]] = {}
     header_check_copy: dict[str, List[str]] = {}
 
-    for source, edge in zip(file_good_source, edges):
+    for source, edge in zip(source_files, edges):
         for header in edge:
 
             if header.file_name not in header_check_copy:
@@ -286,14 +281,32 @@ def read_all_indexed_last() -> List[HeaderFile]:
 
     return headers
 
-def read_shallow_md(dirs: List[str]) -> List[FileDescriptor]:
+def source_files_recompile(reader_list: List[HeaderFile], source_files: List[str], 
+                    header_files: Set[str]) -> Tuple[Set[FileDescriptor], List[HeaderFile]]:
 
-    _, file_good_source = read_all_dirs(dirs, True)
+    #this will do a lot of heavylifting
+
+    #> get old source fds compare to current
+    #> if a files appears to be deleted/moved just remove it from reader_list
+    #> if a file was moved it'll be found later on
+    #> if any changes found to a source file add to a "new edges" list 
+    #- also add to recompile and "ignore"
+    #> if any new files are found, add to a "new edges" list
+    #- also add to recompile and "ignore"
+    #> build "new" edges
+    #> from that build new HeaderFile list
+    #> this should account for any new HeaderFiles / changes made to source files
+    #? in the case of whole new Header that would mean add all sources to recompile and "ignore"
+    #- use "sliding window" to keep the track of the og ones and isolate them for later checking
+    #? if a HeaderFile happens to be in both of the lists, it'll get handled by the next step
+    #- all of the source that could lead it in there, were already added so no problemo here
+    #> "aggregate" the lists now
+    #> head(er) time yay :)
+    #> compare current st_mtimes with old ones, if != add every corresponding source
+    #- but check against the "ignore" list first
+    #> this will also return the updated HeaderFile list
     
-    return []
-
-def compare_file_md(reader_list: List[HeaderFile], shallow_md: List[FileDescriptor]):
-    pass
+    return (set(), [])
 
 def main() -> int:
 
@@ -312,17 +325,21 @@ def main() -> int:
     else:
        DESTINATION_DIRS.append(os.path.abspath("./test_dir/")) 
 
+
+    current_file_good_extension, current_file_good_source = read_all_dirs(DESTINATION_DIRS, True)
     reader_list: List[HeaderFile] = read_all_indexed_last()
 
     if len(reader_list) == 0:
 
         #test place yk
-        read_current: List[HeaderFile] = read_all_current(DESTINATION_DIRS, True)
+        read_current: List[HeaderFile] = build_header_to_source_relation(current_file_good_source)
 
         #print(reader_list[0])
         print(read_current)
 
-        #perform write, compile etc 
+        #compile everything, link, write stuff to a file, etc 
+        #the easier case to handle but obviously should on happen
+        #on fresh inits of "system"
 
     else:
         #otherwise we don't read the whole thing and just do a shallow read (i.e. not read everything)
@@ -331,10 +348,13 @@ def main() -> int:
         #I need to clean up and maybe split to a different class
         #at this point its a big ass main file with no organization whatsoever
 
-        shallow_md: List[FileDescriptor] = read_shallow_md(DESTINATION_DIRS)
+        # => figure out what needs to get recompiled
+        # => recompile -> link -> whatever
+        # => generate new HeaderFile list
+        # => write the new data into a list
 
-        #this will in-place shrink the array
-        compare_file_md(reader_list, shallow_md)
+        need_recompile: Set[FileDescriptor] = source_files_recompile(
+                reader_list, current_file_good_source, current_file_good_extension)
 
         pass
         #I wish I could use the unimplemented macro
